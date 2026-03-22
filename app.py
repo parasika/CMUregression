@@ -1,207 +1,173 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import numpy as np
 
-# -----------------------------------
-# Page setup
-# -----------------------------------
+# ----------------------------
+# PAGE SETUP
+# ----------------------------
 st.set_page_config(page_title="Myopic Regression Predictor", page_icon="📈")
 st.title("Myopic Regression Prediction")
-st.write("Enter patient values and click Predict.")
+st.write("Predict probability of 0.75 regression")
 
-# -----------------------------------
-# Load saved model files
-# -----------------------------------
+# ----------------------------
+# LOAD MODEL
+# ----------------------------
 @st.cache_resource
-def load_artifacts():
+def load_model():
     model = joblib.load("xgb_top30_model.pkl")
     imputer = joblib.load("top30_imputer.pkl")
     features = joblib.load("top30_features.pkl")
     return model, imputer, features
 
-model, imputer, features = load_artifacts()
+model, imputer, features = load_model()
 
-st.write("Loaded features:")
-st.write(features)
-
-# -----------------------------------
-# Default values for each feature
-# Change these if you want
-# -----------------------------------
-default_values = {
-    "ACD_Apex": 3.20,
+# ----------------------------
+# DEFAULT VALUES
+# ----------------------------
+default = {
+    "ACD_Apex": 3.2,
     "PRK": 1,
-    "Ablation_depth": 80.0,
-    "Pre_Sphere": -5.00,
-    "Pre_Cylinder": -1.00,
-    "Pre_MRSE_calc.": -5.50,
-    "Axis_F_flat": 90.0,
-    "R_Min_mm": 6.80,
-    "Num._Ecc._F": 0.50,
-    "Rs_B_mm": 6.50,
-    "Rm_B_mm": 6.30,
-    "R_Min_B_mm": 5.90,
-    "Pupil_Pos_Y": 0.00,
+    "Ablation_depth": 80,
+    "Pre_Sphere": -5,
+    "Pre_Cylinder": -1,
+    "Pre_MRSE_calc.": -5.5,
+    "Axis_F_flat": 90,
+    "R_Min_mm": 6.8,
+    "Num._Ecc._F": 0.5,
+    "Rs_B_mm": 6.5,
+    "Rm_B_mm": 6.3,
+    "R_Min_B_mm": 5.9,
+    "Pupil_Pos_Y": 0,
     "KI": 1.05,
-    "IHA": 10.0,
-    "IHD": 0.020,
-    "D10mm_Pachy": 540.0,
-    "D10mm_Prog": 1.40,
-    "Def._Amp._Max_mm": 1.10,
-    "A1_Time_ms": 7.20,
+    "IHA": 10,
+    "IHD": 0.02,
+    "D10mm_Pachy": 540,
+    "D10mm_Prog": 1.4,
+    "Def._Amp._Max_mm": 1.1,
+    "A1_Time_ms": 7.2,
     "HC_Time_ms": 16.5,
-    "Radius_mm": 7.30,
-    "HC_Deflection_Length_mm": 7.00,
-    "A2_Deflection_Length_mm": 7.10,
+    "Radius_mm": 7.3,
+    "HC_Deflection_Length_mm": 7.0,
+    "A2_Deflection_Length_mm": 7.1,
     "Whole_Eye_Movement_Max_mm": 0.25,
-    "PachySlope": 8.0,
-    "ARTh": 400.0,
-    "bIOP": 15.0,
-    "CBI": 0.20,
-    "TBI": 0.30,
+    "PachySlope": 8,
+    "ARTh": 400,
+    "bIOP": 15,
+    "CBI": 0.2,
+    "TBI": 0.3
 }
 
-# -----------------------------------
-# Pretty labels for display
-# left side = saved feature name
-# right side = nicer label for UI
-# -----------------------------------
-pretty_labels = {
-    "ACD_Apex": "ACD Apex",
-    "PRK": "PRK (0=No, 1=Yes)",
-    "Ablation_depth": "Ablation depth",
-    "Pre_Sphere": "Pre Sphere",
-    "Pre_Cylinder": "Pre Cylinder",
-    "Pre_MRSE_calc.": "Pre MRSE (calc.)",
-    "Axis_F_flat": "Axis F (flat)",
-    "R_Min_mm": "R Min (mm)",
-    "Num._Ecc._F": "Num. Ecc. F",
-    "Rs_B_mm": "Rs B (mm)",
-    "Rm_B_mm": "Rm B (mm)",
-    "R_Min_B_mm": "R Min B (mm)",
-    "Pupil_Pos_Y": "Pupil Pos Y",
-    "KI": "KI",
-    "IHA": "IHA",
-    "IHD": "IHD",
-    "D10mm_Pachy": "D10mm Pachy",
-    "D10mm_Prog": "D10mm Prog",
-    "Def._Amp._Max_mm": "Def. Amp. Max [mm]",
-    "A1_Time_ms": "A1 Time [ms]",
-    "HC_Time_ms": "HC Time [ms]",
-    "Radius_mm": "Radius [mm]",
-    "HC_Deflection_Length_mm": "HC Deflection Length [mm]",
-    "A2_Deflection_Length_mm": "A2 Deflection Length [mm]",
-    "Whole_Eye_Movement_Max_mm": "Whole Eye Movement Max [mm]",
-    "PachySlope": "PachySlope",
-    "ARTh": "ARTh",
-    "bIOP": "bIOP",
-    "CBI": "CBI",
-    "TBI": "TBI",
-}
+# ----------------------------
+# GROUPED INPUT UI
+# ----------------------------
+with st.form("input_form"):
 
-# -----------------------------------
-# Input form
-# -----------------------------------
-with st.form("prediction_form"):
-    st.subheader("Patient Parameters")
-
-    input_data = {}
-
+    st.subheader("👁 Clinical")
     col1, col2 = st.columns(2)
+    with col1:
+        PRK = st.selectbox("PRK", [0, 1], index=1)
+        Pre_Sphere = st.number_input("Pre Sphere", value=default["Pre_Sphere"])
+        Pre_Cylinder = st.number_input("Pre Cylinder", value=default["Pre_Cylinder"])
+    with col2:
+        Pre_MRSE = st.number_input("Pre MRSE (calc.)", value=default["Pre_MRSE_calc."])
+        Ablation_depth = st.number_input("Ablation depth", value=default["Ablation_depth"])
+        ACD_Apex = st.number_input("ACD Apex", value=default["ACD_Apex"])
 
-    for i, feature in enumerate(features):
-        label = pretty_labels.get(feature, feature)
-        default = default_values.get(feature, 0.0)
+    st.subheader("🧿 Tomography")
+    col1, col2 = st.columns(2)
+    with col1:
+        Axis = st.number_input("Axis F (flat)", value=default["Axis_F_flat"])
+        R_Min = st.number_input("R Min (mm)", value=default["R_Min_mm"])
+        Num_Ecc = st.number_input("Num Ecc F", value=default["Num._Ecc._F"])
+        Rs_B = st.number_input("Rs B (mm)", value=default["Rs_B_mm"])
+        Rm_B = st.number_input("Rm B (mm)", value=default["Rm_B_mm"])
+        R_Min_B = st.number_input("R Min B (mm)", value=default["R_Min_B_mm"])
+    with col2:
+        Pupil = st.number_input("Pupil Pos Y", value=default["Pupil_Pos_Y"])
+        KI = st.number_input("KI", value=default["KI"])
+        IHA = st.number_input("IHA", value=default["IHA"])
+        IHD = st.number_input("IHD", value=default["IHD"])
+        D10_Pachy = st.number_input("D10mm Pachy", value=default["D10mm_Pachy"])
+        D10_Prog = st.number_input("D10mm Prog", value=default["D10mm_Prog"])
 
-        with col1 if i % 2 == 0 else col2:
-            if feature == "PRK":
-                input_data[feature] = st.selectbox(label, [0, 1], index=1 if default == 1 else 0)
-            else:
-                input_data[feature] = st.number_input(label, value=float(default), format="%.6f")
+    st.subheader("⚙️ Biomechanics")
+    col1, col2 = st.columns(2)
+    with col1:
+        DefAmp = st.number_input("Def Amp Max", value=default["Def._Amp._Max_mm"])
+        A1_Time = st.number_input("A1 Time", value=default["A1_Time_ms"])
+        HC_Time = st.number_input("HC Time", value=default["HC_Time_ms"])
+        Radius = st.number_input("Radius", value=default["Radius_mm"])
+        HC_Def = st.number_input("HC Deflection Length", value=default["HC_Deflection_Length_mm"])
+    with col2:
+        A2_Def = st.number_input("A2 Deflection Length", value=default["A2_Deflection_Length_mm"])
+        WEM = st.number_input("Whole Eye Movement Max", value=default["Whole_Eye_Movement_Max_mm"])
+        PachySlope = st.number_input("PachySlope", value=default["PachySlope"])
+        ARTh = st.number_input("ARTh", value=default["ARTh"])
+        bIOP = st.number_input("bIOP", value=default["bIOP"])
+        CBI = st.number_input("CBI", value=default["CBI"])
+        TBI = st.number_input("TBI", value=default["TBI"])
 
-    threshold = st.slider("Prediction threshold", 0.1, 0.9, 0.5, 0.01)
-    submitted = st.form_submit_button("Predict")
+    threshold = st.slider("Prediction threshold", 0.1, 0.9, 0.4)
 
-# -----------------------------------
-# Prediction
-# -----------------------------------
-if submitted:
+    submit = st.form_submit_button("Predict")
+
+# ----------------------------
+# PREDICTION
+# ----------------------------
+if submit:
     try:
-        input_df = pd.DataFrame([input_data])
+        data = {
+            "ACD_Apex": ACD_Apex,
+            "PRK": PRK,
+            "Ablation_depth": Ablation_depth,
+            "Pre_Sphere": Pre_Sphere,
+            "Pre_Cylinder": Pre_Cylinder,
+            "Pre_MRSE_calc.": Pre_MRSE,
+            "Axis_F_flat": Axis,
+            "R_Min_mm": R_Min,
+            "Num._Ecc._F": Num_Ecc,
+            "Rs_B_mm": Rs_B,
+            "Rm_B_mm": Rm_B,
+            "R_Min_B_mm": R_Min_B,
+            "Pupil_Pos_Y": Pupil,
+            "KI": KI,
+            "IHA": IHA,
+            "IHD": IHD,
+            "D10mm_Pachy": D10_Pachy,
+            "D10mm_Prog": D10_Prog,
+            "Def._Amp._Max_mm": DefAmp,
+            "A1_Time_ms": A1_Time,
+            "HC_Time_ms": HC_Time,
+            "Radius_mm": Radius,
+            "HC_Deflection_Length_mm": HC_Def,
+            "A2_Deflection_Length_mm": A2_Def,
+            "Whole_Eye_Movement_Max_mm": WEM,
+            "PachySlope": PachySlope,
+            "ARTh": ARTh,
+            "bIOP": bIOP,
+            "CBI": CBI,
+            "TBI": TBI
+        }
 
-        # Ensure exact feature order
-        missing = [f for f in features if f not in input_df.columns]
-        extra = [c for c in input_df.columns if c not in features]
+        df = pd.DataFrame([data])[features]
 
-        if missing:
-            st.error(f"Missing features: {missing}")
-        elif extra:
-            st.error(f"Unexpected features: {extra}")
+        df_imputed = pd.DataFrame(imputer.transform(df), columns=features)
+
+        prob = model.predict_proba(df_imputed)[:, 1][0]
+        pred = int(prob >= threshold)
+
+        st.subheader("📊 Result")
+        st.write(f"**Probability:** {prob:.4f}")
+        st.write(f"**Prediction:** {pred}")
+
+        if prob < 0.2:
+            st.success("Low risk")
+        elif prob < 0.4:
+            st.info("Moderate risk")
+        elif prob < 0.6:
+            st.warning("Intermediate risk")
         else:
-            input_df = input_df[features]
-            input_df_imputed = pd.DataFrame(imputer.transform(input_df), columns=features)
-
-            prob = float(model.predict_proba(input_df_imputed)[:, 1][0])
-            pred = int(prob >= threshold)
-
-            st.subheader("Prediction Result")
-            st.write(f"**Predicted probability of 0.75 regression:** {prob:.4f}")
-            st.write(f"**Predicted class at threshold {threshold:.2f}:** {pred}")
-
-            if prob < 0.20:
-                risk_text = "Low predicted risk"
-            elif prob < 0.40:
-                risk_text = "Mild to moderate predicted risk"
-            elif prob < 0.60:
-                risk_text = "Intermediate predicted risk"
-            else:
-                risk_text = "High predicted risk"
-
-            st.info(risk_text)
+            st.error("High risk")
 
     except Exception as e:
-        st.error(f"Prediction failed: {str(e)}")
-
-# -----------------------------------
-# Batch prediction from Excel
-# -----------------------------------
-st.divider()
-st.subheader("Batch Prediction from Excel")
-
-uploaded_file = st.file_uploader("Upload Excel file (.xlsx)", type=["xlsx"])
-
-if uploaded_file is not None:
-    try:
-        batch_df = pd.read_excel(uploaded_file)
-
-        st.write("Uploaded columns:")
-        st.write(batch_df.columns.tolist())
-
-        missing_cols = [f for f in features if f not in batch_df.columns]
-
-        if missing_cols:
-            st.error(f"Your Excel file is missing these required columns: {missing_cols}")
-        else:
-            X_batch = batch_df[features].copy()
-            X_batch_imputed = pd.DataFrame(imputer.transform(X_batch), columns=features)
-
-            batch_df["Predicted_Probability"] = model.predict_proba(X_batch_imputed)[:, 1]
-            batch_df["Predicted_Class"] = (batch_df["Predicted_Probability"] >= 0.5).astype(int)
-
-            st.success("Prediction complete")
-            st.dataframe(batch_df)
-
-            output_file = "predictions.xlsx"
-            batch_df.to_excel(output_file, index=False)
-
-            with open(output_file, "rb") as f:
-                st.download_button(
-                    label="Download predictions.xlsx",
-                    data=f,
-                    file_name="predictions.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
-    except Exception as e:
-        st.error(f"Batch prediction failed: {str(e)}")
+        st.error(f"Prediction failed: {e}")
