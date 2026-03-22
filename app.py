@@ -71,7 +71,7 @@ st.markdown("""
     color: white;
     margin-bottom: 20px;
 ">
-    <h1 style="margin:0; font-size: 2rem;">📈 Myopic Regression Prediction</h1>
+    <h1 style="margin:0; font-size: 2rem;">📈 CMU Myopic Regression Prediction</h1>
     <p style="margin:8px 0 0 0; font-size:1rem;">
         Estimate the probability of postoperative <b>0.75 regression</b> from clinical, tomography, and biomechanical parameters.
     </p>
